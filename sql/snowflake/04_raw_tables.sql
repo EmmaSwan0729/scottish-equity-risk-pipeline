@@ -1,0 +1,72 @@
+USE ROLE ACCOUNTADMIN;
+
+CREATE WAREHOUSE IF NOT EXISTS EQUITY_WH
+    WAREHOUSE_SIZE = 'XSMALL'
+    AUTO_SUSPEND = 60
+    AUTO_RESUME = TRUE;
+CREATE DATABASE IF NOT EXISTS EQUITY_DB;
+USE DATABASE EQUITY_DB;
+CREATE SCHEMA  IF NOT EXISTS EQUITY_DB.RAW;
+CREATE SCHEMA IF NOT EXISTS EQUITY_DB.STAGING;
+CREATE SCHEMA IF NOT EXISTS EQUITY_DB.MARTS;
+CREATE SCHEMA IF NOT EXISTS EQUITY_DB.ALERTS;
+
+USE ROLE ACCOUNTADMIN;
+
+CREATE STORAGE INTEGRATION IF NOT EXISTS S3_EQUITY_INTEGRATION
+    TYPE = EXTERNAL_STAGE
+    STORAGE_PROVIDER = S3
+    ENABLED = TRUE
+    STORAGE_AWS_ROLE_ARN  = 'arn:aws:iam::526860034407:role/snowflake-equity-role'
+    STORAGE_ALLOWED_LOCATIONS = ('s3://scottish-equity-risk-pipeline-526860034407-eu-west-2-an/raw/stock_prices/');
+
+DESC INTEGRATION S3_EQUITY_INTEGRATION;
+
+USE ROLE ACCOUNTADMIN;
+USE DATABASE EQUITY_DB;
+USE SCHEMA RAW;
+
+CREATE OR REPLACE FILE FORMAT parquet_format
+    TYPE = 'PARQUET'
+    SNAPPY_COMPRESSION = TRUE;
+
+CREATE OR REPLACE STAGE raw_stock_stage
+    URL = 's3://scottish-equity-risk-pipeline-526860034407-eu-west-2-an/raw/stock_prices/'
+    STORAGE_INTEGRATION = S3_EQUITY_INTEGRATION
+    FILE_FORMAT = parquet_format;
+
+LIST @raw_stock_stage;
+
+USE ROLE ACCOUNTADMIN;
+USE DATABASE EQUITY_DB;
+USE SCHEMA RAW;
+CREATE OR REPLACE TABLE raw_stock_prices (
+    date DATE,
+    open FLOAT,
+    high FLOAT,
+    low FLOAT,
+    close FLOAT,
+    volume BIGINT,
+    symbol VARCHAR(20),
+    ingested_at TIMESTAMP_NTZ
+);
+
+COPY INTO raw_stock_prices (date, open, high, low, close, volume, symbol, ingested_at)
+FROM (
+    SELECT 
+        TO_DATE(TO_TIMESTAMP($1:date::BIGINT / 1000000000)),
+        $1:open::FLOAT,
+        $1:high::FLOAT,
+        $1:low::FLOAT,
+        $1:close::FLOAT,
+        $1:volume::BIGINT,
+        $1:symbol::VARCHAR(20),
+        $1:ingested_at::TIMESTAMP_NTZ
+    FROM @raw_stock_stage
+)
+FILE_FORMAT = (FORMAT_NAME = 'parquet_format')
+PATTERN = '.*\.parquet';
+
+SELECT COUNT(*), MIN(date), MAX(date), COUNT(DISTINCT symbol)
+FROM raw_stock_prices;
+

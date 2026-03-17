@@ -50,7 +50,7 @@ def fetch_stock_data(
             logger.info(f"Fetched {len(df)} rows for {ticker}")
 
         except Exception as e:
-            logger(f"Failed to fetch {ticker}: {e}")
+            logger.error(f"Failed to fetch {ticker}: {e}")
             continue
     
     if not all_data:
