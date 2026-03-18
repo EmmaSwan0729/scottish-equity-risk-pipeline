@@ -25,7 +25,8 @@ with DAG(
 
     upload_to_s3 = BashOperator(
         task_id='upload_to_s3',
-        bash_command='cd /opt/airflow && source .venv/bin/activate && python batch/ingestion/upload_to_s3.py',)
+        bash_command='cd /opt/airflow && source .venv/bin/activate && python batch/ingestion/upload_to_s3.py',
+)
 
     dbt_run = BashOperator(
         task_id='dbt_run',

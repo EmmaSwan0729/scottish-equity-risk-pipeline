@@ -1,0 +1,10 @@
+# Scottish Equity Risk Pipeline — Streaming
+# pip install -r requirements_streaming.txt
+
+#Kafka-python==2.0.2
+
+#yfinance==0.2.38
+#pandas==2.2.2
+#nummpy==1.26.4
+
+python-dotenv==1.0.1
