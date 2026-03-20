@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: int_stock_daily
+    columns:
+      - name: symbol
+        tests:
+          - not_null
+      - name: date
+        tests:
+          - not_null

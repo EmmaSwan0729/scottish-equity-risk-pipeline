@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: mart_risk_metrics
+    columns:
+      - name: symbol
+        tests: 
+          - not_null
+          - unique
+      - name: daily_volatility_pct
+        tests: 
+          - not_null
+      - name: var_95_pct
+        tests: 
+          - not_null
+
+  - name: mart_portfolio_summary
+    columns:
+      - name: symbol
+        tests: 
+          - not_null
+          - unique
+      - name: latest_close
+        tests: 
+          - not_null
+
