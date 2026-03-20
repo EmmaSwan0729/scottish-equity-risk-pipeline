@@ -1,0 +1,46 @@
+name: dbt Tests
+
+on:
+  push:
+    branches: [ main ]
+    pull_request:
+      branches: [ main ]
+
+jobs:
+  dbt-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dbt
+      run: pip install dbt-snowflake==1.11.7
+
+    - name: Create dbt profiles
+      run: |
+        mkdir -p ~/.dbt
+        cat > ~/.dbt/profiles.yml << EOF
+        equity_risk:
+          target:dev
+          outputs:
+            dev:
+              type:snowflake
+              account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+              user: ${{ secrets.SNOWFLAKE_USER }}
+              password: ${{ secrets.SNOWFLAKE_PASSWORD }}
+              role: ACCOUNTADMIN
+              database: EQUITY_DB
+              warehouse: EQUITY_WH
+              schema: STAGING
+              threads: 4
+        EOF
+      
+    - name: Run dbt tests
+    working-directory: batch/equity_risk
+    run: dbt test
