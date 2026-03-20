@@ -3,6 +3,19 @@
 An end-to-end data engineering portfolio project that tracks **8 Scottish-listed equities**, computes daily risk metrics through a batch dbt pipeline, streams simulated real-time prices through Kafka and Spark, and surfaces everything in a Streamlit dashboard backed by Snowflake.
 
 ---
+## Business Problem
+
+This project simulates a real-world equity risk monitoring system for
+a portfolio of 8 Scottish-listed equities:
+
+- Portfolio managers need daily risk metrics (volatility, VaR 95%, max drawdown)
+  to assess exposure and make informed allocation decisions
+- Risk teams require real-time alerts when price movements breach defined
+  thresholds (high volatility, sudden drops, statistical anomalies)
+- A unified batch + streaming architecture enables both historical analysis
+  and live monitoring within a single data platform
+
+----
 
 ## Architecture
 
