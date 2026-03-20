@@ -175,7 +175,7 @@ EQUITY_DB
 - Apache Airflow (local standalone install)
 - Snowflake account
 - AWS account with S3 access
-- dbt-snowflake (`pip install dbt-snowflake==1.11.7`)
+- dbt-snowflake (`pip install dbt-snowflake==1.11.3`)
 
 ---
 
@@ -381,6 +381,38 @@ Run a specific model:
 ```bash
 dbt run --select mart_risk_metrics
 ```
+
+---
+
+## Data Quality & CI/CD
+
+### dbt Tests
+
+Data quality is enforced via dbt's built-in test framework across all model layers:
+
+| Layer | Model | Tests |
+|---|---|---|
+| Source | `raw_stock_prices` | `not_null` on `date`, `symbol`, `close` |
+| Core | `int_stock_daily` | `not_null` on `symbol`, `date` |
+| Marts | `mart_risk_metrics` | `not_null` + `unique` on `symbol`; `not_null` on `var_95_pct`, `daily_volatility_pct` |
+| Marts | `mart_portfolio_summary` | `not_null` + `unique` on `symbol`; `not_null` on `latest_close` |
+
+Run tests manually:
+```bash
+cd batch/equity_risk
+dbt test
+```
+
+### CI/CD — GitHub Actions
+
+Every push to `main` automatically triggers the dbt test suite via GitHub Actions (`.github/workflows/dbt_test.yml`). The workflow:
+
+1. Sets up Python 3.11
+2. Installs `dbt-snowflake==1.11.3`
+3. Injects Snowflake credentials from GitHub Secrets
+4. Runs `dbt test` against the live Snowflake warehouse
+
+Snowflake credentials are stored as GitHub repository secrets: `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`.
 
 ---
 
