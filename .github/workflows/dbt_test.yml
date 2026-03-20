@@ -42,5 +42,5 @@ jobs:
         EOF
       
     - name: Run dbt tests
-    working-directory: batch/equity_risk
-    run: dbt test
+      working-directory: batch/equity_risk
+      run: dbt test
