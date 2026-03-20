@@ -10,7 +10,7 @@ An end-to-end data engineering portfolio project that tracks **8 Scottish-listed
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                        BATCH PIPELINE  (weekdays 18:00 UTC)              │
 │                                                                          │
-│  yfinance ──► fetch_stock_data.py ──► upload_to_s3.py                   │
+│  yfinance ──► fetch_stock_data.py ──► upload_to_s3.py                    │
 │                                            │                             │
 │                                       S3 (Parquet)                       │
 │                                            │                             │
@@ -23,7 +23,7 @@ An end-to-end data engineering portfolio project that tracks **8 Scottish-listed
 │                        ──► mart_risk_metrics (table)                     │
 │                        ──► mart_portfolio_summary (table)                │
 │                                                                          │
-│  Orchestration: Apache Airflow DAG  (cron: 0 18 * * 1-5)               │
+│  Orchestration: Apache Airflow DAG  (cron: 0 18 * * 1-5)                 │
 └──────────────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -43,7 +43,7 @@ An end-to-end data engineering portfolio project that tracks **8 Scottish-listed
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                            DASHBOARD                                     │
 │                                                                          │
-│  Streamlit ──► Page 1: Risk Metrics      (volatility, VaR 95%)          │
+│  Streamlit ──► Page 1: Risk Metrics      (volatility, VaR 95%)           │
 │            ──► Page 2: Portfolio Overview (latest prices, volume)        │
 │            ──► Page 3: Real-time Alerts  (Spark-generated alerts)        │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -390,3 +390,12 @@ dbt run --select mart_risk_metrics
 **Partitioned S3 storage** — data is written to `raw/stock_prices/dt=YYYY-MM-DD/stock_prices.parquet`, enabling partition pruning when querying historical date ranges.
 
 **Nanosecond timestamp fix** — yfinance returns dates as nanosecond BIGINT values in Parquet. The Snowflake `COPY INTO` statement converts them via `TO_DATE(TO_TIMESTAMP($1:date::BIGINT / 1000000000))`.
+
+---
+
+## Disclaimer
+
+This project is built for personal learning and portfolio purposes only.  
+Stock data is sourced via [yfinance](https://github.com/ranaroussi/yfinance), 
+which retrieves publicly available market data from Yahoo Finance.  
+This project is not intended for commercial use.
