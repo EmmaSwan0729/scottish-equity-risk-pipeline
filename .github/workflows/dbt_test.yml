@@ -27,10 +27,10 @@ jobs:
         mkdir -p ~/.dbt
         cat > ~/.dbt/profiles.yml << EOF
         equity_risk:
-          target:dev
+          target: dev
           outputs:
             dev:
-              type:snowflake
+              type: snowflake
               account: ${{ secrets.SNOWFLAKE_ACCOUNT }}
               user: ${{ secrets.SNOWFLAKE_USER }}
               password: ${{ secrets.SNOWFLAKE_PASSWORD }}
