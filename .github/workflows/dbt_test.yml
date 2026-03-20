@@ -20,7 +20,7 @@ jobs:
         python-version: '3.11'
 
     - name: Install dbt
-      run: pip install dbt-snowflake==1.11.7
+      run: pip install dbt-snowflake==1.11.3
 
     - name: Create dbt profiles
       run: |
