@@ -99,6 +99,9 @@ a portfolio of 8 Scottish-listed equities:
 
 ```
 scottish-equity-risk-pipeline/
+├── .github/
+│   └── workflows/
+│       └── dbt_test.yml               # GitHub Actions: run dbt test on every push
 ├── batch/
 │   ├── ingestion/
 │   │   ├── fetch_stock_data.py        # Pull 1-year OHLCV data from yfinance
@@ -109,13 +112,15 @@ scottish-equity-risk-pipeline/
 │   └── equity_risk/                   # dbt project (profile: equity_risk)
 │       ├── models/
 │       │   ├── staging/
-│       │   │   ├── _sources.yml       # Source: EQUITY_DB.RAW.raw_stock_prices
+│       │   │   ├── _sources.yml       # Source definition + data quality tests
 │       │   │   └── stg_stock_prices.sql
 │       │   ├── core/
-│       │   │   └── int_stock_daily.sql  # Daily returns via LAG window function
+│       │   │   ├── int_stock_daily.sql
+│       │   │   └── schema.yml         # Data quality tests for core layer
 │       │   └── marts/
-│       │       ├── mart_risk_metrics.sql        # Volatility, VaR 95%, max loss/gain
-│       │       └── mart_portfolio_summary.sql   # Latest prices, volume summary
+│       │       ├── mart_risk_metrics.sql
+│       │       ├── mart_portfolio_summary.sql
+│       │       └── schema.yml         # Data quality tests for marts layer
 │       └── dbt_project.yml
 ├── streaming/
 │   ├── kafka_producer.py              # Simulated price feed (GBM, 2s tick)
