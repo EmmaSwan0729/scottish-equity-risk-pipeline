@@ -27,43 +27,43 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
     
-    html,body, [class*="css"] {
-            font-family: 'IBM Plex Sans', sans-serif;
-            background-color:#0d0f14;
-            color: #c8cdd8;        
+    html, body, [class*="css"] {
+        font-family: 'IBM Plex Sans', sans-serif;
+        background-color: #f7f8fc;
+        color: #1a202c;
     }
-    .stApp {background-color: #0d0f14;}
-            
+    .stApp { background-color: #f7f8fc; }
+
     /* Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #12151c;
-        border-right: 1px solid #1e2330;
+        background-color: #ffffff;
+        border-right: 1px solid #e2e8f0;
     }
-    section[data-testid="stSidebar"] * {color: #8892a4 !important; }
-    section[data-testid="stSidebar"] .stRadio label {color: #c8cdd8 !important; }
-    
+    section[data-testid="stSidebar"] * { color: #4a5568 !important; }
+    section[data-testid="stSidebar"] .stRadio label { color: #1a202c !important; }
+
     /* Metric cards */
     div[data-testid="metric-container"] {
-        background: #12151c;
-        border: 1px solid #1e2330;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
         border-radius: 4px;
-        padding:16px 20px;
+        padding: 16px 20px;
     }
     div[data-testid="metric-container"] label {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 10px;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: #4a5568 !important;
+        color: #718096 !important;
     }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] {
         font-family: 'IBM Plex Mono', monospace;
         font-size: 22px;
-        color: #e2e8f0 !important;
+        color: #1a202c !important;
     }
-            
+
     /* Dataframe */
-    .stDataframe {border: 1px solid #1e2330; border-radius: 4px; }
+    .stDataframe { border: 1px solid #e2e8f0; border-radius: 4px; }
 
     /* Page title */
     .page-title {
@@ -71,29 +71,29 @@ st.markdown("""
         font-size: 11px;
         letter-spacing: 0.18em;
         text-transform: uppercase;
-        color: #4a90d9;
+        color: #2b6cb0;
         margin-bottom: 4px;
     }
     .page-heading {
         font-family: 'IBM Plex Sans', sans-serif;
         font-weight: 300;
         font-size: 28px;
-        color: #e2e8f0;
+        color: #1a202c;
         margin-bottom: 24px;
         letter-spacing: -0.01em;
     }
     .divider {
         border: none;
-        border-top: 1px solid #1e2330;
+        border-top: 1px solid #e2e8f0;
         margin: 24px 0;
     }
-    .alert-high {color: #fc8181; font-weight: 600; }
-    .alert-medium {color: #ffad55; font-weight: 600; }
-    .alert-low {color: #68d391; font-weight: 600; }
-    .mono {font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+    .alert-high { color: #c53030; font-weight: 600; }
+    .alert-medium { color: #c05621; font-weight: 600; }
+    .alert-low { color: #276749; font-weight: 600; }
+    .mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
 </style>
 """, unsafe_allow_html=True)
-
+    
 @st.cache_resource(show_spinner=False)
 def get_connection():
     """Create a cached Snowflake connection."""
@@ -119,7 +119,7 @@ with st.sidebar:
 
     page = st.radio(
         "Navigate",
-        ["Risk Metrics", "Portfolio Overview", "Real-time Alerts"],
+        ["Risk Metrics", "Portfolio Overview", "Real-time Alerts", "Correlation Matrix"],
         label_visibility="collapsed",
     )
 
@@ -154,6 +154,8 @@ if page == "Risk Metrics":
                 SYMBOL,
                 ROUND(ANNUAL_VOLATILITY_PCT, 2)  AS "Ann. Volatility (%)",
                 ROUND(VAR_95_PCT, 2)             AS "VaR 95% (daily %)",
+                ROUND(SHARPE_RATIO, 2) AS "Sharpe Ratio",
+                ROUND(MAX_DRAWDOWN_PCT, 2) AS "Max Drawdown (%)",
                 ROUND(MAX_DAILY_GAIN_PCT, 2)     AS "Max Daily Gain (%)",
                 ROUND(MAX_DAILY_LOSS_PCT, 2)     AS "Max Daily Loss (%)"
             FROM EQUITY_DB.STAGING_MARTS.MART_RISK_METRICS
@@ -166,14 +168,14 @@ if page == "Risk Metrics":
     # KPI summary row
     avg_vol = df["Ann. Volatility (%)"].mean()
     avg_var = df["VaR 95% (daily %)"].mean()
-    worst = df.loc[df["Max Daily Loss (%)"].idxmin(), "SYMBOL"]
-    best = df.loc[df["Max Daily Gain (%)"].idxmax(), "SYMBOL"]
+    best_sharpe = df.loc[df["Sharpe Ratio"].idxmax(), "SYMBOL"]
+    worst_drawdown = df.loc[df["Max Drawdown (%)"].idxmax(), "SYMBOL"]
 
     c1,c2,c3,c4 = st.columns(4)
     c1.metric("Avg Ann. Volatility", f"{avg_vol:.1f}%")
     c2.metric("Avg VaR 95%", f"{avg_var:.2f}%")
-    c3.metric("Worst Max Loss", worst)
-    c4.metric("Best Max Gain", best)
+    c3.metric("Best Sharpe Ratio", best_sharpe)
+    c4.metric("Worst Drawdown", worst_drawdown)
 
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
@@ -198,17 +200,17 @@ if page == "Risk Metrics":
         marker=dict(
             color=df["Ann. Volatility (%)"],
             colorscale=[[0, "#1e3a5f"], [0.5, "#2b6cb0"], [1, "#4a90d9"]],
-            line=dict(color="#0d0f14", width=1),
+            line=dict( width=0),
         ),
         text=df["Ann. Volatility (%)"].map(lambda v: f"{v:.1f}%"),
         textposition="outside",
-        textfont=dict(family="IBM Plex Mono", size=11, color="#8892a4"),
+        textfont=dict(family="IBM Plex Mono", size=11, color="#c8cdd8"),
     ))
     fig_vol.update_layout(
-        plot_bgcolor="#0d0f14", paper_bgcolor="#0d0f14",
-        font=dict(family="IBM Plex Sans", color="#8892a4"),
-        yaxis=dict(gridcolor="#1e2330", title="Volatity (%)"),
-        xaxis=dict(gridcolor="#1e2330"),
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
+        yaxis=dict(gridcolor="#e2e8f0", title="Volatity (%)"),
+        xaxis=dict(gridcolor="#e2e8f0"),
         margin=dict(t=20, b=20),
         height=320,
     )
@@ -222,15 +224,14 @@ if page == "Risk Metrics":
         mode="markers+text",
         text=df["SYMBOL"],
         textposition="top center",
-        textfont=dict(family="IBM Plex Mono", size=10, color="#8892a4"),
-        marker=dict(size=12, color="#4a90d9",
-                    line=dict(color="#0d0f14", width=2)),
+        textfont=dict(family="IBM Plex Mono", size=10, color="#c8cdd8"),
+        marker=dict(size=12, color="#4a90d9"),
     ))
     fig_scatter.update_layout(
-        plot_bgcolor="#0d0f14", paper_bgcolor="#0d0f14",
-        font=dict(family="IBM Plex Sans", color="#8892a4"),
-        xaxis=dict(gridcolor="#1e2330", title="VaR 95% (%)"),
-        yaxis=dict(gridcolor="#1e2330", title="Max Daily Loss (%)"),
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
+        xaxis=dict(gridcolor="#e2e8f0", title="VaR 95% (%)"),
+        yaxis=dict(gridcolor="#e2e8f0", title="Max Daily Loss (%)"),
         margin=dict(t=20, b=20),
         height=340,
     )
@@ -312,15 +313,15 @@ elif page == "Portfolio Overview":
         name="Avg Price",
         x=df["SYMBOL"], y=df["AVG_PRICE"],
         marker_color="#2d3748",
-        marker_line=dict(color="#4a5568",width=1),
+        marker_line=dict(color="#c8cdd8",width=1),
     ))
     fig.update_layout(
         barmode="group",
-        plot_bgcolor="#0d0f14", paper_bgcolor="#0d0f14",
-        font=dict(family="IBM Plex Sans", color="#8892a4"),
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
         legend=dict(bgcolor="#12151c", bordercolor="#1e2330", borderwidth=1),
-        yaxis=dict(gridcolor="#1e2330",title="Price (£)"),
-        xaxis=dict(gridcolor="#1e2330"),
+        yaxis=dict(gridcolor="#e2e8f0",title="Price (£)"),
+        xaxis=dict(gridcolor="#e2e8f0"),
         margin=dict(t=20, b=20),
         height=340,
     )
@@ -333,17 +334,17 @@ elif page == "Portfolio Overview":
         marker=dict(
             color=df["TOTAL_VOLUME"],
             colorscale=[[0, "#1a2744"], [1, "#4a90d9"]],
-            line=dict(color="#0d0f14", width=1),
+            line=dict(width=0),
         ),
         text=df["TOTAL_VOLUME"].map(lambda v: f"{v/1e6:.1f}M"),
         textposition="outside",
-        textfont=dict(family="IBM Plex Mono", size=11, color="#8892a4"),
+        textfont=dict(family="IBM Plex Mono", size=11, color="#c8cdd8"),
     ))
     fig_v.update_layout(
-        plot_bgcolor="#0d0f14", paper_bgcolor="#0d0f14",
-        font=dict(family="IBM Plex Sans", color="#8892a4"),
-        yaxis=dict(gridcolor="#1e2330", title="Volume"),
-        xaxis=dict(gridcolor="#1e2330"),
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
+        yaxis=dict(gridcolor="#e2e8f0", title="Volume"),
+        xaxis=dict(gridcolor="#e2e8f0"),
         margin=dict(t=20, b=20),
         height=230,
     )
@@ -441,15 +442,15 @@ elif page == "Real-time Alerts":
     counts = filtered.groupby("SYMBOL").size().reset_index(name="Count").sort_values("Count", ascending=False)
     fig_a = go.Figure(go.Bar(
         x=counts["SYMBOL"], y=counts["Count"],
-        marker=dict(color="#fc8181", line=dict(color="#0d0f14", width=1)),
+        marker=dict(color="#fc8181", line=dict(width=0)),
         text=counts["Count"], textposition="outside",
-        textfont=dict(family="IBM Plex Mono", size=11, color="#8892a4"),
+        textfont=dict(family="IBM Plex Mono", size=11, color="#c8cdd8"),
     ))
     fig_a.update_layout(
-        plot_bgcolor="#0d0f14", paper_bgcolor="#0d0f14",
-        font=dict(family="IBM Plex Sans", color="#8892a4"),
-        yaxis=dict(gridcolor="#1e2330", title="Alert Count"),
-        xaxis=dict(gridcolor="#1e2330"),
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
+        yaxis=dict(gridcolor="#e2e8f0", title="Alert Count"),
+        xaxis=dict(gridcolor="#e2e8f0"),
         margin=dict(t=20, b=20),
         height=300,
     )
@@ -468,14 +469,91 @@ elif page == "Real-time Alerts":
         fillcolor="rgba(74,144,217,0.08)",
     ))
     fig_t.update_layout(
-        plot_bgcolor="#0d0f14", paper_bgcolor="#0d0f14",
-        font=dict(family="IBM Plex Sans", color="#8892a4"),
-        yaxis=dict(gridcolor="#1e2330", title="Alert Count"),
-        xaxis=dict(gridcolor="#1e2330"),
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
+        yaxis=dict(gridcolor="#e2e8f0", title="Alert Count"),
+        xaxis=dict(gridcolor="#e2e8f0"),
         margin=dict(t=20, b=20),
         height=200,
     )
     st.plotly_chart(fig_t, use_container_width=True)
 
 
-# ------- Page  -----------
+# ------- Page 4 Correlation Matrix -----------
+elif page == "Correlation Matrix":
+    st.markdown("<div class='page-title'>Batch · Portfolio</div>", unsafe_allow_html=True)
+    st.markdown("<div class='page-heading'>Correlation Matrix</div>", unsafe_allow_html=True)
+
+    with st.spinner("Loading correlation data..."):
+        df_corr = query(conn, """
+            SELECT SYMBOL_1, SYMBOL_2, CORRELATION
+            FROM EQUITY_DB.STAGING_MARTS.MART_CORRELATION
+        """)
+    if df_corr.empty:
+        st.warning("No data found in MART_CORRELATION.")
+        st.stop()
+
+    #pivot to square matrix
+    tickers = ["NWG.L", "ABDN.L", "SMT.L", "MNKS.L", "AV.L", "HIK.L", "SSE.L", "WEIR.L"]
+    matrix = pd.DataFrame(1.0, index=tickers, columns=tickers)
+    for _, row in df_corr.iterrows():
+        matrix.loc[row["SYMBOL_1"], row["SYMBOL_2"]] = row["CORRELATION"]
+        matrix.loc[row["SYMBOL_2"], row["SYMBOL_1"]] = row["CORRELATION"]
+    
+    #KPI row
+    avg_corr = df_corr["CORRELATION"].mean()
+    max_pair = df_corr.loc[df_corr["CORRELATION"].idxmax()]
+    min_pair = df_corr.loc[df_corr["CORRELATION"].idxmin()]
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Avg Pairwise Correlation", f"{avg_corr:.4f}")
+    c2.metric("Most Correlated", f"{max_pair['SYMBOL_1']} / {max_pair['SYMBOL_2']}", f"{max_pair['CORRELATION']:.4f}")
+    c3.metric("Least Correlated", f"{min_pair['SYMBOL_1']} / {min_pair['SYMBOL_2']}", f"{min_pair['CORRELATION']:.4f}")
+
+    st.markdown("<hr class='divider>", unsafe_allow_html=True)
+
+    st.markdown("#### Pairwise Return Correlation")
+    fig_heat  = go.Figure(go.Heatmap(
+        z=matrix.values,
+        x=tickers,
+        y=tickers,
+        colorscale=[
+            [0.0, "#f7f8fc"],
+            [0.5, "#63b3ed"],
+            [1.0, "#1a365d"],
+        ],
+        zmin=-1, zmax=1,
+        text=matrix.round(2).values,
+        texttemplate="%{text}",
+        textfont=dict(family="IBM Plex Mono", size=13, color="#ffffff"),
+        colorbar=dict(
+            tickfont=dict(color="#c8cdd8"),
+            outlinecolor="#1e2330"
+        ),
+    ))
+    fig_heat.update_layout(
+        plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
+        font=dict(family="IBM Plex Sans", color="#c8cdd8"),
+        margin=dict(t=20,b=20),
+        height=480,
+        xaxis=dict(tickfont=dict(family="IBM Plex Mono", size=11)),
+        yaxis=dict(tickfont=dict(family="IBM Plex Mono", size=11)),
+    )
+    st.plotly_chart(fig_heat, use_container_width=True)
+
+    st.markdown("<hr class='divider>", unsafe_allow_html=True)
+
+    # Table: sorted by correlation
+    st.markdown("#### All Pairs - Sorted by Correlation")
+    st.dataframe(
+        df_corr.sort_values("CORRELATION", ascending=False)
+        .rename(columns={
+            "SYMBOL_1": "Symbol_1",
+            "SYMBOL_2": "Symbol_2",
+            "CORRELATION": "Correlation",
+        })
+        .style.background_gradient(subset=["Correlation"], cmap="Blues")
+        .format({"Correlation": "{:.4f}"}),
+        use_container_width=True,
+        hide_index=True,
+    )
