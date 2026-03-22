@@ -121,8 +121,7 @@ def main():
         SparkSession.builder.appName("EquityRiskStreaming")
         .config("spark.jars.packages",
                 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0")
-                .config("spark.sql.streaming.checkpointLocation", "/tmp/spark_checkpoint")
-                .getOrCreate()
+        .getOrCreate()
     )
     spark.sparkContext.setLogLevel("WARN")
 
@@ -149,6 +148,7 @@ def main():
         parsed.writeStream
         .foreachBatch(process_batch)
         .trigger(processingTime="10 seconds")
+        .option("checkpointLocation", "/tmp/spark_checkpoint/equity_risk")
         .start()
     )
 

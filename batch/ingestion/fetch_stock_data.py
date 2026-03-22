@@ -3,20 +3,16 @@ from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
 import logging
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-SCOTTISH_TICKERS = [
-    "NWG.L",    
-    "ABDN.L",   
-    "SMT.L",   
-    "MNKS.L",   
-    "AV.L",    
-    "HIK.L",
-    "SSE.L",
-    "WEIR.L"
-]
+_default_tickers = "NWG.L, ABDN.L, SMT.L, MNKS.L, AV.L, HIK.L, SSE.L, WEIR.L"
+SCOTTISH_TICKERS = os.getenv("EQUITY_TICKERS", _default_tickers).split(",")
 
 def fetch_stock_data(
         tickers: list,

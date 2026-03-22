@@ -441,6 +441,10 @@ Snowflake credentials are stored as GitHub repository secrets: `SNOWFLAKE_ACCOUN
 
 **Nanosecond timestamp fix** — yfinance returns dates as nanosecond BIGINT values in Parquet. The Snowflake `COPY INTO` statement converts them via `TO_DATE(TO_TIMESTAMP($1:date::BIGINT / 1000000000))`.
 
+**Batch vs streaming architecture** — the pipeline deliberately runs two separate risk calculation paths. The batch layer (dbt) computes accurate historical metrics from a full year of clean OHLCV data, optimised for reporting and dashboard queries. The streaming layer (Spark) detects real-time anomalies from simulated tick data within 10-second micro-batches, optimised for low-latency alerting. Separating the two avoids forcing a streaming system to maintain long historical windows, and avoids forcing a batch system to meet latency requirements it was not designed for.
+
+**Cost optimisation** — the Snowflake warehouse (`EQUITY_WH`) is configured with `AUTO_SUSPEND = 60` seconds and `AUTO_RESUME = TRUE`, ensuring compute only runs when queries are active. The Kafka topic `stock_prices` uses a 24-hour retention window, retaining only the data needed for real-time processing without accumulating unbounded storage. The `risk_alerts` topic uses a 7-day retention window to allow alert replay if the Spark consumer restarts.
+
 ---
 
 ## Disclaimer
