@@ -35,6 +35,7 @@ a portfolio of 8 Scottish-listed equities:
 │                        ──► int_stock_daily  (table)                      │
 │                        ──► mart_risk_metrics (table)                     │
 │                        ──► mart_portfolio_summary (table)                │
+│                        ──► mart_correlation (table)                      │
 │                                                                          │
 │  Orchestration: Apache Airflow DAG  (cron: 0 18 * * 1-5)                 │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -118,6 +119,7 @@ scottish-equity-risk-pipeline/
 │       │   │   ├── int_stock_daily.sql
 │       │   │   └── schema.yml         # Data quality tests for core layer
 │       │   └── marts/
+│       │       ├── mart_correlation.sql    # Pairwise return correlations (28 pairs)
 │       │       ├── mart_risk_metrics.sql
 │       │       ├── mart_portfolio_summary.sql
 │       │       └── schema.yml         # Data quality tests for marts layer
@@ -128,7 +130,7 @@ scottish-equity-risk-pipeline/
 │   ├── init_kafka_topics.py           # One-time topic creation script
 │   └── requirements_streaming.txt
 ├── dashboard/
-│   └── streamlit_app.py               # 3-page Streamlit dashboard
+│   └── streamlit_app.py               # 4-page Streamlit dashboard
 ├── docker/
 │   └── docker-compose.yml             # Zookeeper + Kafka + Kafka UI + Spark cluster
 ├── sql/
@@ -167,6 +169,9 @@ EQUITY_DB
 
 **`STAGING_MARTS.MART_PORTFOLIO_SUMMARY`**
 `SYMBOL` · `TRADING_DAYS` · `AVG_CLOSE` · `MIN_CLOSE` · `MAX_CLOSE` · `AVG_VOLUME` · `LATEST_CLOSE` · `LATEST_DATE`
+
+**`STAGING_MARTS.MART_CORRELATION`**
+`SYMBOL_1` · `SYMBOL_2` · `CORRELATION`
 
 **`ALERTS.RISK_ALERTS`**
 `ALERT_ID` · `SYMBOL` · `ALERT_TYPE` · `METRIC_VALUE` · `THRESHOLD_VALUE` · `PRICE_AT_ALERT` · `TRIGGERED_AT`
@@ -362,7 +367,7 @@ Opens at [http://localhost:8501](http://localhost:8501). Three pages:
 | **Risk Metrics** | `STAGING_MARTS.MART_RISK_METRICS` | Annualised volatility, VaR 95%, max daily loss/gain per symbol |
 | **Portfolio Overview** | `STAGING_MARTS.MART_PORTFOLIO_SUMMARY` | Latest close prices vs historical average, volume by symbol |
 | **Real-time Alerts** | `ALERTS.RISK_ALERTS` | Live alert log with symbol/type filters and timeline chart |
-
+| **Correlation Matrix** | `STAGING_MARTS.MART_CORRELATION` | Pairwise return correlation heatmap for all 8 equities |
 ---
 
 ## dbt Models
@@ -373,6 +378,7 @@ Opens at [http://localhost:8501](http://localhost:8501). Three pages:
 | `int_stock_daily` | Core | Table | Daily returns computed via `LAG()` window function |
 | `mart_risk_metrics` | Marts | Table | Volatility, annualised volatility, VaR 95% (`PERCENTILE_CONT(0.05)`), max loss/gain |
 | `mart_portfolio_summary` | Marts | Table | Latest close, avg/min/max price, avg volume per symbol |
+| `mart_correlation` | Marts | Table | Pairwise return correlations for all 28 equity pairs (`CORR()`) |
 
 Run all models:
 
@@ -401,6 +407,7 @@ Data quality is enforced via dbt's built-in test framework across all model laye
 | Core | `int_stock_daily` | `not_null` on `symbol`, `date` |
 | Marts | `mart_risk_metrics` | `not_null` + `unique` on `symbol`; `not_null` on `var_95_pct`, `daily_volatility_pct` |
 | Marts | `mart_portfolio_summary` | `not_null` + `unique` on `symbol`; `not_null` on `latest_close` |
+| Marts | `mart_correlation` | `not_null` on `symbol_1`, `symbol_2`, `correlation` |
 
 Run tests manually:
 ```bash

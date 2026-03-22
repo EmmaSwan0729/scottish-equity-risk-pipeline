@@ -16,3 +16,22 @@ sources:
         - name: close
           tests:
             - not_null
+  - name: alerts
+    database: EQUITY_DB
+    schema: ALERTS
+    tables:
+      - name: risk_alerts
+        columns:
+          - name: alert_type
+            tests:
+              - accepted_values:
+                  values: 
+                    - HIGH_VOLATILITY
+                    - PRICE_DROP
+                    - PRICE_ANOMALY
+          - name: symbol
+            tests:
+              - not_null
+          - name: triggered_at
+            tests:
+              - not_null
