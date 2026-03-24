@@ -200,7 +200,7 @@ if page == "Risk Metrics":
         marker=dict(
             color=df["Ann. Volatility (%)"],
             colorscale=[[0, "#1e3a5f"], [0.5, "#2b6cb0"], [1, "#4a90d9"]],
-            line=dict( width=0),
+            line=dict(width=0),
         ),
         text=df["Ann. Volatility (%)"].map(lambda v: f"{v:.1f}%"),
         textposition="outside",
@@ -319,7 +319,7 @@ elif page == "Portfolio Overview":
         barmode="group",
         plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
         font=dict(family="IBM Plex Sans", color="#c8cdd8"),
-        legend=dict(bgcolor="#12151c", bordercolor="#1e2330", borderwidth=1),
+        legend=dict(bgcolor="#ffffff", bordercolor="#ffffff", borderwidth=0),
         yaxis=dict(gridcolor="#e2e8f0",title="Price (£)"),
         xaxis=dict(gridcolor="#e2e8f0"),
         margin=dict(t=20, b=20),
@@ -458,7 +458,7 @@ elif page == "Real-time Alerts":
 
     # Chart: Alerts over time
     st.markdown("#### Alerts time line ")
-    filtered["date"] =pd.to_datetime(filtered["TRIGGERED_AT"]).dt.date
+    filtered["date"] =pd.to_datetime(filtered["TRIGGERED_AT"]).dt.strftime("%Y-%m-%d %H:%M:00")
     timeline = filtered.groupby("date").size().reset_index(name="Count")
     fig_t = go.Figure(go.Scatter(
         x=timeline["date"], y=timeline["Count"],
@@ -472,7 +472,7 @@ elif page == "Real-time Alerts":
         plot_bgcolor="#ffffff", paper_bgcolor="#f7f8fc",
         font=dict(family="IBM Plex Sans", color="#c8cdd8"),
         yaxis=dict(gridcolor="#e2e8f0", title="Alert Count"),
-        xaxis=dict(gridcolor="#e2e8f0"),
+        xaxis=dict(gridcolor="#e2e8f0", tickformat="%Y-%m-%d %H:%M"),
         margin=dict(t=20, b=20),
         height=200,
     )
@@ -510,7 +510,7 @@ elif page == "Correlation Matrix":
     c2.metric("Most Correlated", f"{max_pair['SYMBOL_1']} / {max_pair['SYMBOL_2']}", f"{max_pair['CORRELATION']:.4f}")
     c3.metric("Least Correlated", f"{min_pair['SYMBOL_1']} / {min_pair['SYMBOL_2']}", f"{min_pair['CORRELATION']:.4f}")
 
-    st.markdown("<hr class='divider>", unsafe_allow_html=True)
+    st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
     st.markdown("#### Pairwise Return Correlation")
     fig_heat  = go.Figure(go.Heatmap(
@@ -541,7 +541,7 @@ elif page == "Correlation Matrix":
     )
     st.plotly_chart(fig_heat, use_container_width=True)
 
-    st.markdown("<hr class='divider>", unsafe_allow_html=True)
+    st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
     # Table: sorted by correlation
     st.markdown("#### All Pairs - Sorted by Correlation")
