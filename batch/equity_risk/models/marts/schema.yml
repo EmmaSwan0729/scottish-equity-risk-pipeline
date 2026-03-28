@@ -1,5 +1,4 @@
 version: 2
-
 models:
   - name: mart_risk_metrics
     columns:
@@ -10,9 +9,15 @@ models:
       - name: daily_volatility_pct
         tests: 
           - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
       - name: var_95_pct
         tests: 
           - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "<= 0"
 
   - name: mart_portfolio_summary
     columns:
@@ -23,6 +28,9 @@ models:
       - name: latest_close
         tests: 
           - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
   
   - name: mart_correlation
     columns:
@@ -35,4 +43,7 @@ models:
       - name: correlation
         tests: 
           - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= -1 and correlation <= 1"
 
