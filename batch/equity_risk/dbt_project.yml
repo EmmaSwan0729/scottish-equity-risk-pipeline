@@ -31,13 +31,16 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   equity_risk:
-    # Config indicated by + and applies to all files under models/example/
+    # dbt prepends the project name as a schema prefix by default.
+    # In Snowflake, this results in schemas such as STAGING_STAGING, STAGING_MARTS.
+    # This is intentional for dev/test environment isolation.
+    # In production, the prefix can be overridden via the 'schema' config in profiles.yml.
     staging:
       +materialized: view
       +schema: STAGING
     core:
       +materialized: table
-      +schema: STAGING
+      +schema: CORE
     marts:
       +materialized: table
       +schema: MARTS

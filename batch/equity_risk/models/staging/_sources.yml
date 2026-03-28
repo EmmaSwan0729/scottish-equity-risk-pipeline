@@ -28,10 +28,11 @@ sources:
           - name: alert_type
             tests:
               - accepted_values:
-                  values: 
-                    - HIGH_VOLATILITY
-                    - PRICE_DROP
-                    - PRICE_ANOMALY
+                  arguments:
+                    values: 
+                      - HIGH_VOLATILITY
+                      - PRICE_DROP
+                      - PRICE_ANOMALY
           - name: symbol
             tests:
               - not_null
