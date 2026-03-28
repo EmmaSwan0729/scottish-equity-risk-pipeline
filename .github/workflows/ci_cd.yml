@@ -46,7 +46,9 @@ jobs:
       
     - name: Run dbt tests
       working-directory: batch/equity_risk
-      run: dbt test
+      run: |
+        dbt deps
+        dbt test
 
   dbt-deploy:
     runs-on: ubuntu-latest
