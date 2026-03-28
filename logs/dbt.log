@@ -30,3 +30,19 @@ Runtime Error
 [0m17:26:23.341842 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10f305c60>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1102193c0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x11028ffd0>]}
 [0m17:26:23.342387 [debug] [MainThread]: Flushing usage events
 [0m17:26:24.149882 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m17:40:25.266815 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bee5d50>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10ce6d3f0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10ce6d000>]}
+
+
+============================== 17:40:25.274767 | ae0a01a2-8064-4b1a-8a83-08e8aaefb1c7 ==============================
+[0m17:40:25.274767 [info ] [MainThread]: Running with dbt=1.11.7
+[0m17:40:25.275756 [debug] [MainThread]: running dbt with arguments {'log_path': 'logs', 'invocation_command': 'dbt run', 'printer_width': '80', 'fail_fast': 'False', 'static_parser': 'True', 'profiles_dir': '/Users/moxingxing/.dbt', 'write_json': 'True', 'log_cache_events': 'False', 'target_path': 'None', 'cache_selected_only': 'False', 'warn_error': 'None', 'use_colors': 'True', 'empty': 'False', 'send_anonymous_usage_stats': 'True', 'introspect': 'True', 'no_print': 'None', 'use_experimental_parser': 'False', 'quiet': 'False', 'version_check': 'True', 'debug': 'False', 'log_format': 'default', 'partial_parse': 'True', 'indirect_selection': 'eager', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])'}
+[0m17:40:25.276586 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Users/moxingxing/Documents/CV_Project/Finance/scottish-equity-risk-pipeline/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m17:40:25.278462 [debug] [MainThread]: Resource report: {"command_name": "run", "command_success": false, "command_wall_clock_time": 0.12261532, "process_in_blocks": "0", "process_kernel_time": 0.32673, "process_mem_max_rss": "98250752", "process_out_blocks": "0", "process_user_time": 1.836762}
+[0m17:40:25.279287 [debug] [MainThread]: Command `dbt run` failed at 17:40:25.279136 after 0.12 seconds
+[0m17:40:25.279834 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10bee5d50>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10cdfca90>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10ce6fe50>]}
+[0m17:40:25.280382 [debug] [MainThread]: Flushing usage events
+[0m17:40:26.391916 [debug] [MainThread]: An error was encountered while trying to flush usage events
