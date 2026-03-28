@@ -102,7 +102,7 @@ a portfolio of 8 Scottish-listed equities:
 scottish-equity-risk-pipeline/
 ├── .github/
 │   └── workflows/
-│       └── dbt_test.yml               # GitHub Actions: run dbt test on every push
+│       └── ci_cd.yml               # GitHub Actions: run dbt test on every push
 ├── batch/
 │   ├── ingestion/
 │   │   ├── fetch_stock_data.py        # Pull 1-year OHLCV data from yfinance
@@ -417,12 +417,17 @@ dbt test
 
 ### CI/CD — GitHub Actions
 
-Every push to `main` automatically triggers the dbt test suite via GitHub Actions (`.github/workflows/dbt_test.yml`). The workflow:
+Every push to `main` automatically triggers a two-stage CI/CD pipeline via GitHub Actions (`.github/workflows/ci_cd.yml`):
 
+**CI — `dbt-test` job** (runs on every push and PR):
 1. Sets up Python 3.11
 2. Installs `dbt-snowflake==1.11.3`
 3. Injects Snowflake credentials from GitHub Secrets
 4. Runs `dbt test` against the live Snowflake warehouse
+
+**CD — `dbt-deploy` job** (runs on push to `main` only, after `dbt-test` passes):
+1. Rebuilds the dbt profile targeting the production `MARTS` schema
+2. Runs `dbt run --target prod` to deploy all models to Snowflake
 
 Snowflake credentials are stored as GitHub repository secrets: `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`.
 
