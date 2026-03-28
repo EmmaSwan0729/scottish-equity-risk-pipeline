@@ -88,4 +88,6 @@ jobs:
       
       - name: Deploy dbt models
         working-directory: batch/equity_risk
-        run: dbt run --target prod
+        run: |
+          dbt deps 
+          dbt run --target prod
