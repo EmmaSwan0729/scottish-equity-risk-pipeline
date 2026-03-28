@@ -123,7 +123,8 @@ scottish-equity-risk-pipeline/
 │       │       ├── mart_risk_metrics.sql
 │       │       ├── mart_portfolio_summary.sql
 │       │       └── schema.yml         # Data quality tests for marts layer
-│       └── dbt_project.yml
+│       ├── dbt_project.yml
+│       └── packages.yml               # dbt-utils 1.3.3 dependency
 ├── streaming/
 │   ├── kafka_producer.py              # Simulated price feed (GBM, 2s tick)
 │   ├── spark_streaming.py             # Spark consumer + alert writer to Snowflake
@@ -160,7 +161,12 @@ EQUITY_DB
     └── risk_alerts               # Real-time alerts from Spark Streaming
 ```
 
-> **Note on schema naming:** `profiles.yml` sets `schema: STAGING`, which causes dbt to prefix all schemas with `STAGING_`. Tables live in `STAGING_MARTS`, `STAGING_CORE`, and `STAGING_STAGING` — not `MARTS`, `CORE`, `STAGING`.
+> **Note on schema naming:** dbt automatically prefixes all schemas with the target schema
+> defined in `profiles.yml` (set to `STAGING` for the dev environment). This results in
+> `STAGING_STAGING`, `STAGING_CORE`, and `STAGING_MARTS` in Snowflake. This prefix is
+> intentional for dev/test environment isolation. In production, the prefix can be
+> overridden via the `schema` config in `profiles.yml` to produce clean schema names
+> (`STAGING`, `CORE`, `MARTS`).
 
 ### Key Columns
 
@@ -399,21 +405,25 @@ dbt run --select mart_risk_metrics
 
 ### dbt Tests
 
-Data quality is enforced via dbt's built-in test framework across all model layers:
+Data quality is enforced via dbt's built-in test framework across all model layers,
+including structural integrity checks and financial business logic validation:
 
 | Layer | Model | Tests |
 |---|---|---|
-| Source | `raw_stock_prices` | `not_null` on `date`, `symbol`, `close` |
+| Source | `raw_stock_prices` | `not_null` on `date`, `symbol`, `close`; `close >= 0` |
 | Core | `int_stock_daily` | `not_null` on `symbol`, `date` |
-| Marts | `mart_risk_metrics` | `not_null` + `unique` on `symbol`; `not_null` on `var_95_pct`, `daily_volatility_pct` |
-| Marts | `mart_portfolio_summary` | `not_null` + `unique` on `symbol`; `not_null` on `latest_close` |
-| Marts | `mart_correlation` | `not_null` on `symbol_1`, `symbol_2`, `correlation` |
+| Marts | `mart_risk_metrics` | `not_null` + `unique` on `symbol`; `daily_volatility_pct >= 0`; `var_95_pct <= 0` |
+| Marts | `mart_portfolio_summary` | `not_null` + `unique` on `symbol`; `latest_close >= 0` |
+| Marts | `mart_correlation` | `not_null` on `symbol_1`, `symbol_2`, `correlation`; `correlation` ∈ `[-1, 1]` |
+
+Business logic tests use `dbt_utils.expression_is_true` (dbt-labs/dbt_utils 1.3.3).
 
 Run tests manually:
 ```bash
 cd batch/equity_risk
 dbt test
 ```
+---
 
 ### CI/CD — GitHub Actions
 
@@ -457,7 +467,31 @@ Snowflake credentials are stored as GitHub repository secrets: `SNOWFLAKE_ACCOUN
 
 **Cost optimisation** — the Snowflake warehouse (`EQUITY_WH`) is configured with `AUTO_SUSPEND = 60` seconds and `AUTO_RESUME = TRUE`, ensuring compute only runs when queries are active. The Kafka topic `stock_prices` uses a 24-hour retention window, retaining only the data needed for real-time processing without accumulating unbounded storage. The `risk_alerts` topic uses a 7-day retention window to allow alert replay if the Spark consumer restarts.
 
+**Spark Streaming fault tolerance** — the Spark Structured Streaming job uses checkpointing
+to persist its progress metadata to a local directory. This ensures that if the consumer
+restarts, it resumes from where it left off without reprocessing or skipping messages.
+
 ---
+
+## Scalability
+
+The pipeline is designed to be ticker-agnostic. Equities are defined in a single
+configuration list and can be extended without modifying the pipeline logic. dbt models
+operate on `symbol` partitions, allowing horizontal scaling as the universe of equities
+grows. Kafka topics use 3 partitions on `stock_prices`, enabling parallel ingestion for
+larger symbol sets. Snowflake's elastic compute scales independently of storage.
+
+---
+
+## Observability (Future Work)
+
+- Add structured logging and monitoring for Airflow DAG runs (e.g. task duration, retry counts)
+- Track pipeline latency and data freshness metrics
+- Integrate alerting for pipeline failures via Slack or email
+- Expose dbt test results as metrics for dashboarding
+
+---
+
 
 ## Disclaimer
 
