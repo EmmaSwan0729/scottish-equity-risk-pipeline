@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
 import logging
-import os
+import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,8 +11,12 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_default_tickers = "NWG.L, ABDN.L, SMT.L, MNKS.L, AV.L, HIK.L, SSE.L, WEIR.L"
-SCOTTISH_TICKERS = os.getenv("EQUITY_TICKERS", _default_tickers).split(",")
+def load_tickers(config_path: str = "config/tickers.yaml") -> list:
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return [item['symbol'] for item in config['tickers']]
+
+SCOTTISH_TICKERS = load_tickers()
 
 def fetch_stock_data(
         tickers: list,

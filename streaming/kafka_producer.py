@@ -12,6 +12,7 @@ Useage:
 """
 
 import json
+import yaml
 import time
 import random
 import logging
@@ -33,17 +34,13 @@ logger = logging.getLogger(__name__)
 KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 KAFKA_TOPIC = "stock_prices"
 
+def load_tickers(config_path: str = "config/tickers.yaml") -> list:
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return [item['symbol'] for item in config['tickers']]
+
 # 8 scottish equities tracked in this pipeline
-SYMBOLS = [
-    "NWG.L",  # NatWest Group
-    "ABDN.L",  # Aberdeen Standard Investments
-    "SMT.L",  # Scottish Mortgage Investment Trust
-    "MNKS.L", #Monks Investment Trust
-    "AV.L",   # Aviva
-    "HIK.L",  # Hikma Pharmaceuticals
-    "SSE.L",  # SSE plc(energy)
-    "WEIR.L", # Weir Group
-]
+SYMBOLS = load_tickers()
 
 # Price simulation parameters
 TICK_INTERVAL_SEC = 2   # Seconds between each batch of price updates
