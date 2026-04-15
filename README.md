@@ -19,48 +19,46 @@ a portfolio of 8 Scottish-listed equities:
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                        BATCH PIPELINE  (weekdays 18:00 UTC)              │
-│                                                                          │
-│  yfinance ──► fetch_stock_data.py ──► upload_to_s3.py                    │
-│                                            │                             │
-│                                       S3 (Parquet)                       │
-│                                            │                             │
-│                               Snowflake External Stage                   │
-│                                            │                             │
-│                                    raw_stock_prices                      │
-│                                            │                             │
-│                    dbt ──► stg_stock_prices (view)                       │
-│                        ──► int_stock_daily  (table)                      │
-│                        ──► mart_risk_metrics (table)                     │
-│                        ──► mart_portfolio_summary (table)                │
-│                        ──► mart_correlation (table)                      │
-│                                                                          │
-│  Orchestration: Apache Airflow DAG  (cron: 0 18 * * 1-5)                 │
-└──────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph BATCH["🗂 Batch Pipeline (weekdays 18:00 UTC)"]
+        A[yfinance] --> B[fetch_stock_data.py]
+        B --> C[upload_to_s3.py]
+        C --> D[(S3 Parquet)]
+        D --> E[Snowflake External Stage]
+        E --> F[raw_stock_prices]
+        F --> G[dbt]
+        G --> G1[stg_stock_prices]
+        G --> G2[int_stock_daily]
+        G --> G3[mart_risk_metrics]
+        G --> G4[mart_portfolio_summary]
+        G --> G5[mart_correlation]
+    end
 
-┌──────────────────────────────────────────────────────────────────────────┐
-│                     STREAMING PIPELINE  (real-time)                      │
-│                                                                          │
-│  kafka_producer.py  ──►  Kafka topic: stock_prices                       │
-│  (GBM simulation, 2s tick)                                               │
-│                                │                                         │
-│                     Spark Structured Streaming                           │
-│                     (micro-batch every 10s)                              │
-│                                │                                         │
-│                    Alert detection (3 types)                             │
-│                                │                                         │
-│                   Snowflake: ALERTS.RISK_ALERTS                          │
-└──────────────────────────────────────────────────────────────────────────┘
+    subgraph STREAM["⚡ Streaming Pipeline (real-time)"]
+        H[kafka_producer.py\nGBM simulation 2s tick]
+        H --> I[Kafka: stock_prices]
+        I --> J[Spark Structured Streaming\nmicro-batch every 10s]
+        J --> K[Alert Detection\nHIGH_VOLATILITY / PRICE_DROP / PRICE_ANOMALY]
+        K --> L[(Snowflake: ALERTS.RISK_ALERTS)]
+    end
 
-┌──────────────────────────────────────────────────────────────────────────┐
-│                            DASHBOARD                                     │
-│                                                                          │
-│  Streamlit ──► Page 1: Risk Metrics      (volatility, VaR 95%)           │
-│            ──► Page 2: Portfolio Overview (latest prices, volume)        │
-│            ──► Page 3: Real-time Alerts  (Spark-generated alerts)        │
-└──────────────────────────────────────────────────────────────────────────┘
+    subgraph DASH["📊 Dashboard"]
+        M[Streamlit]
+        M --> M1[Risk Metrics]
+        M --> M2[Portfolio Overview]
+        M --> M3[Real-time Alerts]
+        M --> M4[Correlation Matrix]
+    end
+
+    G3 & G4 & G5 --> M
+    L --> M3
+
+    subgraph ORCH["🔁 Orchestration"]
+        N[Airflow DAG\ncron: 0 18 * * 1-5]
+    end
+
+    N -.->|triggers| BATCH
 ```
 
 ---
@@ -483,19 +481,25 @@ larger symbol sets. Snowflake's elastic compute scales independently of storage.
 
 ---
 
-## Observability (Future Work)
+## Observability
 
-- Add structured logging and monitoring for Airflow DAG runs (e.g. task duration, retry counts)
-- Track pipeline latency and data freshness metrics
+Structured logging is implemented in the Airflow DAG via three callbacks:
+
+- **Task success**: logs task name, execution date, and duration in seconds
+- **Task failure**: logs task name, execution date, duration, and retry attempt number
+- **Pipeline completion**: logs a `[PIPELINE COMPLETE]` entry when all tasks succeed
+
+All log entries follow a consistent `[STATUS] DAG | Task | Execution | Duration` format, queryable via the Airflow UI task logs.
+
+**Future work:**
+- Track data freshness metrics
 - Integrate alerting for pipeline failures via Slack or email
 - Expose dbt test results as metrics for dashboarding
-
 ---
-
 
 ## Disclaimer
 
-This project is built for personal learning and portfolio purposes only.  
+This project is built for portfolio purposes only.  
 Stock data is sourced via [yfinance](https://github.com/ranaroussi/yfinance), 
 which retrieves publicly available market data from Yahoo Finance.  
 This project is not intended for commercial use.

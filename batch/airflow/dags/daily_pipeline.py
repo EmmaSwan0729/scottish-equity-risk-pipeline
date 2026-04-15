@@ -4,11 +4,29 @@ from datetime import datetime, timedelta
 import logging
 
 def on_failure_callback(context):
-    task_id = context['task_instance'].task_id
-    dag_id = context['task_instance'].dag_id
-    execution_date = context['execution_date']
+    ti = context['task_instance']
+    duration = (datetime.utcnow() - ti.start_date).seconds if ti.start_date else None
     logging.error(
-        f"[ALERT] Task failed | DAG: {dag_id} | Task: {task_id} | {execution_date}"
+        f"[FAILURE] DAG: {ti.dag_id} | Task: {ti.task_id} |"
+        f"Excecution: {context['execution_date']} |"
+        f"Duration: {duration}s | Try: {ti.try_number}"
+    )
+
+def on_success_callback(context):
+    ti = context['task_instance']
+    duration = (ti.end_date - ti.start_date).seconds if ti.start_date and ti.end_date else None
+    logging.info(
+        f"[SUCCESS] DAG: {ti.dag_id} | Task: {ti.task_id} |"
+        f"Execution: {context['execution_date']} |"
+        f"Duration: {duration}s"
+    )
+
+def on_dag_success_callback(context):
+    dag_id = context['dag'].dag_id
+    execution_date = context['execution_date']
+    logging.info(
+        f"[PIPELINE COMPLETE] DAG: {dag_id} |"
+        f"Execution: { execution_date} | Status: SUCCESS"
     )
 
 default_args = {
