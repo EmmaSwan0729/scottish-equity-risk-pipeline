@@ -221,12 +221,14 @@ AWS_REGION=eu-west-2
 S3_BUCKET_NAME=scottish-equity-risk-pipeline-526860034407-eu-west-2-an
 
 # Snowflake
-SNOWFLAKE_ACCOUNT=MOQNKPX-BU34698
-SNOWFLAKE_USER=EMMA
+SNOWFLAKE_ACCOUNT=<your_account>
+SNOWFLAKE_USER=<your_user>
 SNOWFLAKE_PASSWORD=<your_password>
 SNOWFLAKE_WAREHOUSE=EQUITY_WH
 SNOWFLAKE_DATABASE=EQUITY_DB
 SNOWFLAKE_ROLE=ACCOUNTADMIN
+
+Credentials are managed via environment variables and should not be committed.
 ```
 
 ### 4. Set up Snowflake infrastructure
