@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator
 from airflow.providers.standard.operators.bash import BashOperator 
+import snowflake.connector
 from datetime import datetime, timedelta
 import logging
 import sys
@@ -31,6 +32,29 @@ def on_dag_success_callback(context):
         f"[PIPELINE COMPLETE] DAG: {dag_id} |"
         f"Execution: { execution_date} | Status: SUCCESS"
     )
+
+def delete_today(ds: str, **kwargs):
+    import os
+    conn = snowflake.connector.connect(
+        account=os.getenv("SNOWFLAKE_ACCOUNT"),
+        user=os.getenv("SNOWFLAKE_USER"),
+        password=os.getenv("SNOWFLAKE_PASSWORD"),
+        database="EQUITY_DB",
+        schema="RAW",
+        warehouse="EQUITY_WH",
+    )
+    cursor = conn.cursor()
+    cursor.execute(f"DELETE FROM raw_stock_prices WHERE date = '{ds}'")
+    deleted = cursor.rowcount
+    logging.info(f"[IDEMPOTENCY] Deleted {deleted} rows for date={ds}")
+    cursor.close()
+    conn.close()
+
+delete_today_task = PythonOperator(
+    task_id='delete_today',
+    python_callable=delete_today,
+    op_kwargs={'ds': '{{ ds }}'},
+)
 
 def fetch_and_upload(ds: str, **kwargs):
     from batch.ingestion.fetch_stock_data import fetch_stock_data, load_tickers
@@ -90,4 +114,4 @@ with DAG(
         bash_command='cd /opt/airflow/batch/equity_risk && source ../../.venv/bin/activate && dbt test',
     )
 
-    fetch_and_upload_task >> dbt_run >> dbt_test
+    delete_today_task >> fetch_and_upload_task >> dbt_run >> dbt_test
