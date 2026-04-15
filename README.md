@@ -491,10 +491,16 @@ Structured logging is implemented in the Airflow DAG via three callbacks:
 
 All log entries follow a consistent `[STATUS] DAG | Task | Execution | Duration` format, queryable via the Airflow UI task logs.
 
+## DAG Design
+
+- **PythonOperator for ingestion**: `fetch_and_upload` combines data fetching and S3 upload into a single testable Python function
+- **Parameterised execution date**: `fetch_and_upload` receives `{{ ds }}` from Airflow, ensuring each run fetches data for the correct date
+- **dbt test step**: `dbt test` runs after `dbt run`, enforcing data quality checks on every pipeline execution
+
 **Future work:**
 - Track data freshness metrics
 - Integrate alerting for pipeline failures via Slack or email
-- Expose dbt test results as metrics for dashboarding
+- Add Deadline Alerts (Airflow 3.1+) for task-level SLA monitoring
 ---
 
 ## Disclaimer
