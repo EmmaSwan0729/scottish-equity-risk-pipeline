@@ -96,6 +96,8 @@ flowchart TD
 
 ## Project Structure
 
+<details>
+<summary>Project Structure</summary>
 ```
 scottish-equity-risk-pipeline/
 ├── .github/
@@ -139,7 +141,7 @@ scottish-equity-risk-pipeline/
 ├── requirements.txt
 └── README.md
 ```
-
+</details>
 ---
 
 ## Snowflake Schema
