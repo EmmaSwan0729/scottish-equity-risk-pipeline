@@ -531,6 +531,46 @@ All log entries follow a consistent `[STATUS] DAG | Task | Execution | Duration`
 
 ---
 
+## Failure Handling
+
+The pipeline is designed to fail fast and recover cleanly:
+
+- **Task-level retries**: each task has `retries=2` with a 5-minute delay, handling transient network or API failures automatically
+- **Execution timeout**: tasks are bounded by a 1-hour `execution_timeout`, preventing runaway processes from blocking the scheduler
+- **Idempotent ingestion**: the `delete_today` task removes any existing rows for the execution date before reloading, ensuring safe reruns without data duplication
+- **dbt test gate**: `dbt test` runs after `dbt run` as a hard quality gate — if any data quality check fails, the pipeline stops and alerts via the failure callback
+- **Structured failure logging**: `on_failure_callback` logs the DAG, task, execution date, duration, and retry attempt, making failures queryable in the Airflow UI
+
+---
+
+## Consistency Model
+
+The batch pipeline follows an **overwrite-on-rerun** consistency model:
+
+- Each daily run deletes existing rows for that date before inserting new data, guaranteeing exactly-once semantics at the row level
+- dbt models are materialised as `table` (full refresh), ensuring downstream marts always reflect the latest ingested data
+- The streaming pipeline writes alerts directly to Snowflake in micro-batches every 10 seconds; alerts are append-only and not deduplicated
+
+---
+
+## Performance Characteristics
+
+| Component | Typical Duration |
+|---|---|
+| `delete_today` | < 5 seconds |
+| `fetch_and_upload` | 15–30 seconds (yfinance API + S3 upload) |
+| `dbt run` (5 models) | 10–15 seconds |
+| `dbt test` (23 tests) | 5–10 seconds |
+| Full DAG end-to-end | ~60–90 seconds |
+
+Snowflake warehouse auto-suspends after 60 seconds of inactivity, minimising compute costs for a once-daily batch pipeline.
+
+**Data volumes:**
+- Batch pipeline processes ~500 rows per symbol per run (1 year of daily OHLCV data = ~500 trading days)
+- Streaming pipeline produces ~4 messages/second (8 symbols × 1 tick per 2 seconds)
+- Spark micro-batch latency: ~10 seconds end-to-end
+- Snowflake dashboard queries return in <1 second
+
 ## Disclaimer
 
 This project is built for portfolio purposes only.  
