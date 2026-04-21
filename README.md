@@ -21,7 +21,7 @@ a portfolio of 8 Scottish-listed equities:
 
 ```mermaid
 flowchart TD
-    subgraph BATCH["🗂 Batch Pipeline (weekdays 18:00 UTC)"]
+    subgraph BATCH["Batch Pipeline (weekdays 18:00 UTC)"]
         A[yfinance] --> B[fetch_stock_data.py]
         B --> C[upload_to_s3.py]
         C --> D[(S3 Parquet)]
@@ -43,7 +43,7 @@ flowchart TD
         K --> L[(Snowflake: ALERTS.RISK_ALERTS)]
     end
 
-    subgraph DASH["📊 Dashboard"]
+    subgraph DASH["Dashboard"]
         M[Streamlit]
         M --> M1[Risk Metrics]
         M --> M2[Portfolio Overview]
@@ -54,12 +54,15 @@ flowchart TD
     G3 & G4 & G5 --> M
     L --> M3
 
-    subgraph ORCH["🔁 Orchestration"]
+    subgraph ORCH["Orchestration"]
         N[Airflow DAG\ncron: 0 18 * * 1-5]
     end
 
     N -.->|triggers| BATCH
 ```
+**dbt Lineage Graph** — full transformation flow from raw source to mart tables:
+
+![dbt Lineage Graph](docs/dbt_lineage_graph.png)
 
 ---
 
@@ -97,20 +100,20 @@ flowchart TD
 ## Project Structure
 
 <details>
-<summary>Project Structure</summary>
+<summary>Click to expand</summary>
 
 ```
 scottish-equity-risk-pipeline/
 ├── .github/
 │   └── workflows/
-│       └── ci_cd.yml               # GitHub Actions: run dbt test on every push
+│       └── ci_cd.yml                  # GitHub Actions: dbt test on every push
 ├── batch/
 │   ├── ingestion/
 │   │   ├── fetch_stock_data.py        # Pull 1-year OHLCV data from yfinance
 │   │   └── upload_to_s3.py            # Upload Parquet to S3 (partitioned by date)
 │   ├── airflow/
 │   │   └── dags/
-│   │       └── daily_pipeline.py      # Airflow DAG: fetch → upload → dbt run
+│   │       └── daily_pipeline.py      # Airflow DAG: delete → fetch → dbt run → dbt test
 │   └── equity_risk/                   # dbt project (profile: equity_risk)
 │       ├── models/
 │       │   ├── staging/
@@ -126,24 +129,29 @@ scottish-equity-risk-pipeline/
 │       │       └── schema.yml         # Data quality tests for marts layer
 │       ├── dbt_project.yml
 │       └── packages.yml               # dbt-utils 1.3.3 dependency
+├── config/
+│   └── tickers.yaml                   # Centralised ticker list for all components
+├── dashboard/
+│   └── streamlit_app.py               # 4-page Streamlit dashboard
+├── docker/
+│   └── docker-compose.yml             # Zookeeper + Kafka + Kafka UI + Spark cluster
+├── docs/                              # Project screenshots
+├── sql/
+│   └── snowflake/
+│       ├── 01_setup.sql               # Warehouse, schemas, tables, S3 integration, stage
+│       └── 02_load_data.sql           # COPY INTO for initial/manual data load
 ├── streaming/
 │   ├── kafka_producer.py              # Simulated price feed (GBM, 2s tick)
 │   ├── spark_streaming.py             # Spark consumer + alert writer to Snowflake
 │   ├── init_kafka_topics.py           # One-time topic creation script
 │   └── requirements_streaming.txt
-├── dashboard/
-│   └── streamlit_app.py               # 4-page Streamlit dashboard
-├── docker/
-│   └── docker-compose.yml             # Zookeeper + Kafka + Kafka UI + Spark cluster
-├── sql/
-│   └── snowflake/
-│       ├── 01_setup.sql          # Snowflake setup: warehouse, schemas, stage, COPY INTO
-│       └── 02_load_data.sql    # ALERTS.RISK_ALERTS table DDL
+├── start_airflow.sh                   # Startup script for Airflow 3.x (macOS)
 ├── requirements.txt
 └── README.md
 ```
 
 </details>
+
 ---
 
 ## Snowflake Schema
@@ -161,6 +169,7 @@ EQUITY_DB
 │   └── mart_portfolio_summary    # Latest close, avg price, volume per symbol
 └── ALERTS
     └── risk_alerts               # Real-time alerts from Spark Streaming
+    
 ```
 
 > **Note on schema naming:** dbt automatically prefixes all schemas with the target schema
@@ -303,6 +312,9 @@ Then open [http://localhost:8080](http://localhost:8080) and enable the `scottis
 ```
 fetch_stock_data >> upload_to_s3 >> dbt_run
 ```
+![Airflow DAG Success](docs/airflow_dag_success.png)
+
+![Airflow DAG Run Detail](docs/airflow_dag_run_detail.png)
 
 ### Streaming pipeline
 
@@ -363,6 +375,10 @@ Spark processes micro-batches every 10 seconds and writes alerts to `EQUITY_DB.A
 docker-compose -f docker/docker-compose.yml down
 ```
 
+![Kafka Topics](docs/kafka_topics.png)
+
+![Kafka Stock Prices Messages](docs/kafka_stock_prices_messages.png)
+
 ### Dashboard
 
 ```bash
@@ -378,6 +394,11 @@ Opens at [http://localhost:8501](http://localhost:8501). Three pages:
 | **Portfolio Overview** | `STAGING_MARTS.MART_PORTFOLIO_SUMMARY` | Latest close prices vs historical average, volume by symbol |
 | **Real-time Alerts** | `ALERTS.RISK_ALERTS` | Live alert log with symbol/type filters and timeline chart |
 | **Correlation Matrix** | `STAGING_MARTS.MART_CORRELATION` | Pairwise return correlation heatmap for all 8 equities |
+
+![Streamlit Risk Metrics](docs/streamlit_risk_metrics.png)
+
+![Streamlit Correlation Matrix](docs/streamlit_correlation_matrix.png)
+
 ---
 
 ## dbt Models
@@ -444,6 +465,8 @@ Every push to `main` automatically triggers a two-stage CI/CD pipeline via GitHu
 2. Runs `dbt run --target prod` to deploy all models to Snowflake
 
 Snowflake credentials are stored as GitHub repository secrets: `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PASSWORD`.
+
+![GitHub Actions CI/CD](docs/github_actions_ci_cd.png)
 
 ---
 
