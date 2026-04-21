@@ -10,6 +10,7 @@ import os
 def on_failure_callback(context):
     ti = context['task_instance']
     duration = (datetime.utcnow() - ti.start_date).total_seconds() if ti.start_date else None
+    context.get('logical_date') or context.get('execution_date', 'N/A')
     logging.error(
         f"[FAILURE] DAG: {ti.dag_id} | Task: {ti.task_id} |"
         f"Execution: {context['execution_date']} |"
@@ -19,6 +20,7 @@ def on_failure_callback(context):
 def on_success_callback(context):
     ti = context['task_instance']
     duration = (ti.end_date - ti.start_date).total_seconds() if ti.start_date and ti.end_date else None
+    context.get('logical_date') or context.get('execution_date', 'N/A')
     logging.info(
         f"[SUCCESS] DAG: {ti.dag_id} | Task: {ti.task_id} |"
         f"Execution: {context['execution_date']} |"
@@ -27,7 +29,7 @@ def on_success_callback(context):
 
 def on_dag_success_callback(context):
     dag_id = context['dag'].dag_id
-    execution_date = context['execution_date']
+    execution_date = context.get('logical_date') or context.get('execution_date', 'N/A')
     logging.info(
         f"[PIPELINE COMPLETE] DAG: {dag_id} |"
         f"Execution: { execution_date} | Status: SUCCESS"
@@ -49,12 +51,6 @@ def delete_today(ds: str, **kwargs):
     logging.info(f"[IDEMPOTENCY] Deleted {deleted} rows for date={ds}")
     cursor.close()
     conn.close()
-
-delete_today_task = PythonOperator(
-    task_id='delete_today',
-    python_callable=delete_today,
-    op_kwargs={'ds': '{{ ds }}'},
-)
 
 def fetch_and_upload(ds: str, **kwargs):
     from batch.ingestion.fetch_stock_data import fetch_stock_data, load_tickers
@@ -84,7 +80,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
     'execution_timeout':timedelta(hours=1),
     'on_failure_callback': on_failure_callback,
-    'on_success_callback':'on_success_callback'
+    'on_success_callback': on_success_callback
 }
 
 with DAG(
@@ -98,6 +94,12 @@ with DAG(
     on_success_callback=on_dag_success_callback,
 ) as dag:
 
+    delete_today_task = PythonOperator(
+        task_id='delete_today',
+        python_callable=delete_today,
+        op_kwargs={'ds': '{{ ds }}'},
+    )
+
     fetch_and_upload_task = PythonOperator(
         task_id='fetch_and_upload',
         python_callable=fetch_and_upload,
@@ -106,12 +108,20 @@ with DAG(
 
     dbt_run = BashOperator(
         task_id='dbt_run',
-        bash_command='cd /Users/moxingxing/Documents/CV_Project/Finance/scottish-equity-risk-pipeline/batch/equity_risk && source ../../.venv/bin/activate && dbt run',
+        bash_command='cd $DBT_PROJECT_DIR && $VENV_DIR/bin/dbt run',
+        env={
+        'DBT_PROJECT_DIR': os.path.join(os.path.dirname(__file__), '../../equity_risk'),
+        'VENV_DIR': os.path.join(os.path.dirname(__file__), '../../../.venv'),
+        },
     )
 
     dbt_test = BashOperator(
         task_id='dbt_test',
-        bash_command='cd /Users/moxingxing/Documents/CV_Project/Finance/scottish-equity-risk-pipeline/batch/equity_risk && source ../../.venv/bin/activate && dbt test',
+        bash_command='cd $DBT_PROJECT_DIR && $VENV_DIR/bin/dbt test',
+        env={
+        'DBT_PROJECT_DIR': os.path.join(os.path.dirname(__file__), '../../equity_risk'),
+        'VENV_DIR': os.path.join(os.path.dirname(__file__), '../../../.venv'),
+        },
     )
 
     delete_today_task >> fetch_and_upload_task >> dbt_run >> dbt_test
