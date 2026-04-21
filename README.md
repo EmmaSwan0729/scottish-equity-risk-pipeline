@@ -332,7 +332,7 @@ docker-compose -f docker/docker-compose.yml ps
 
 | Service | URL |
 |---|---|
-| Kafka UI | http://localhost:8080 |
+| Kafka UI | http://localhost:8083 |
 | Spark Master UI | http://localhost:8081 |
 | Spark Worker UI | http://localhost:8082 |
 
