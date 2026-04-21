@@ -395,6 +395,11 @@ Opens at [http://localhost:8501](http://localhost:8501). Four pages:
 | **Real-time Alerts** | `ALERTS.RISK_ALERTS` | Live alert log with symbol/type filters and timeline chart |
 | **Correlation Matrix** | `STAGING_MARTS.MART_CORRELATION` | Pairwise return correlation heatmap for all 8 equities |
 
+The dashboard is designed for three user personas:
+- **Portfolio managers** → daily risk monitoring (volatility, VaR, drawdown)
+- **Analysts** → correlation analysis and price vs historical average
+- **Risk teams** → real-time alert tracking with symbol and type filters
+
 ![Streamlit Risk Metrics](docs/streamlit_risk_metrics.png)
 
 ![Streamlit Correlation Matrix](docs/streamlit_correlation_matrix.png)
