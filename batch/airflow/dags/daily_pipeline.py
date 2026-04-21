@@ -70,7 +70,7 @@ def fetch_and_upload(ds: str, **kwargs):
         end_date=ds,
     )
 
-    s3_path = upload_to_s3(
+    s3_path = upload_df_to_s3(
         df=df,
         bucket=os.getenv("S3_BUCKET_NAME"),
         date=ds,
@@ -106,12 +106,12 @@ with DAG(
 
     dbt_run = BashOperator(
         task_id='dbt_run',
-        bash_command='cd /opt/airflow/batch/equity_risk && source ../../.venv/bin/activate && dbt run',
+        bash_command='cd /Users/moxingxing/Documents/CV_Project/Finance/scottish-equity-risk-pipeline/batch/equity_risk && source ../../.venv/bin/activate && dbt run',
     )
 
     dbt_test = BashOperator(
         task_id='dbt_test',
-        bash_command='cd /opt/airflow/batch/equity_risk && source ../../.venv/bin/activate && dbt test',
+        bash_command='cd /Users/moxingxing/Documents/CV_Project/Finance/scottish-equity-risk-pipeline/batch/equity_risk && source ../../.venv/bin/activate && dbt test',
     )
 
     delete_today_task >> fetch_and_upload_task >> dbt_run >> dbt_test

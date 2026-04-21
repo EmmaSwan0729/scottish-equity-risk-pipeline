@@ -72,7 +72,7 @@ services:
 
   # Kafka UI 
   # Web interface for browsing topics, messages, and consumer groups
-  # Access at: http://localhost:8080
+  # Access at: http://localhost:8083
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: equity_kafka_ui
@@ -80,7 +80,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "8083:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: equity_local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
