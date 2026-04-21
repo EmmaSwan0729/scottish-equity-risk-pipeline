@@ -137,8 +137,8 @@ scottish-equity-risk-pipeline/
 │   └── docker-compose.yml             # Zookeeper + Kafka + Kafka UI + Spark cluster
 ├── sql/
 │   └── snowflake/
-│       ├── 04_raw_tables.sql          # Snowflake setup: warehouse, schemas, stage, COPY INTO
-│       └── create_alerts_table.sql    # ALERTS.RISK_ALERTS table DDL
+│       ├── 01_setup.sql          # Snowflake setup: warehouse, schemas, stage, COPY INTO
+│       └── 02_load_data.sql    # ALERTS.RISK_ALERTS table DDL
 ├── requirements.txt
 └── README.md
 ```
