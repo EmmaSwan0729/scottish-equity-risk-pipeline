@@ -386,7 +386,7 @@ docker-compose -f docker/docker-compose.yml down
 streamlit run dashboard/streamlit_app.py
 ```
 
-Opens at [http://localhost:8501](http://localhost:8501). Three pages:
+Opens at [http://localhost:8501](http://localhost:8501). Four pages:
 
 | Page | Data Source | Content |
 |---|---|---|
@@ -502,11 +502,8 @@ restarts, it resumes from where it left off without reprocessing or skipping mes
 
 ## Scalability
 
-The pipeline is designed to be ticker-agnostic. Equities are defined in a single
-configuration list and can be extended without modifying the pipeline logic. dbt models
-operate on `symbol` partitions, allowing horizontal scaling as the universe of equities
-grows. Kafka topics use 3 partitions on `stock_prices`, enabling parallel ingestion for
-larger symbol sets. Snowflake's elastic compute scales independently of storage.
+The pipeline is ticker-agnostic. Equities are defined centrally in `config/tickers.yaml` and can be extended without modifying any pipeline logic. dbt models
+operate on `symbol` partitions, allowing horizontal scaling as the universe of equities grows. Kafka topics use 3 partitions on `stock_prices`, enabling parallel ingestion for larger symbol sets. Snowflake's elastic compute scales independently of storage.
 
 ---
 
